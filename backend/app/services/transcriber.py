@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 # Check if Groq API is available
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 USE_GROQ = bool(GROQ_API_KEY)
 
 # Only load the heavy Whisper model if we need it (fallback mode)
