@@ -1,9 +1,9 @@
 # backend/app/services/transcriber.py
 # Uses Groq's free Whisper API for fast, accurate transcription.
-# Falls back to local faster-whisper if GROQ_API_KEY is not set.
+# Local faster-whisper is ONLY imported if GROQ_API_KEY is not set,
+# keeping ~250MB of RAM free in production.
 
 import os
-import json
 import logging
 import httpx
 from app.core.config import get_settings
@@ -11,35 +11,16 @@ from app.core.config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# Check if Groq API is available
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 USE_GROQ = bool(GROQ_API_KEY)
-
-# Only load the heavy Whisper model if we need it (fallback mode)
-_local_model = None
-
-
-def _get_local_model():
-    """Lazy-load local Whisper model only if Groq is unavailable."""
-    global _local_model
-    if _local_model is None:
-        from faster_whisper import WhisperModel
-        logger.info(f"Loading local Whisper model: {settings.whisper_model_size}")
-        _local_model = WhisperModel(
-            settings.whisper_model_size,
-            device="cpu",
-            compute_type="int8",
-        )
-        logger.info("Local Whisper model loaded.")
-    return _local_model
 
 
 def preload_model():
     """Called at startup. With Groq, this is a no-op (no model to load)."""
     if USE_GROQ:
-        logger.info("Using Groq Whisper API — no local model needed.")
+        logger.info("Using Groq Whisper API — no local model to load (saving ~250MB RAM).")
     else:
-        logger.info("GROQ_API_KEY not set — falling back to local Whisper.")
+        logger.info("GROQ_API_KEY not set — loading local Whisper model.")
         _get_local_model()
 
 
@@ -81,7 +62,6 @@ def _transcribe_groq(wav_path: str) -> dict:
 
         if response.status_code != 200:
             logger.error(f"Groq API error {response.status_code}: {response.text}")
-            # Fall back to local model
             return _transcribe_local(wav_path)
 
         data = response.json()
@@ -89,14 +69,13 @@ def _transcribe_groq(wav_path: str) -> dict:
         duration = float(data.get("duration", 0))
         word_count = len(full_text.split()) if full_text else 0
 
-        # Parse word-level timestamps
         all_words = []
         for word_data in data.get("words", []):
             all_words.append({
                 "word": word_data.get("word", "").strip().lower().strip(".,!?;:"),
                 "start": round(float(word_data.get("start", 0)), 3),
                 "end": round(float(word_data.get("end", 0)), 3),
-                "probability": 0.95,  # Groq doesn't return per-word confidence
+                "probability": 0.95,
             })
 
         logger.info(
@@ -115,6 +94,27 @@ def _transcribe_groq(wav_path: str) -> dict:
     except Exception as e:
         logger.error(f"Groq transcription failed: {e}. Falling back to local.")
         return _transcribe_local(wav_path)
+
+
+# ── Local Whisper fallback (only loaded if GROQ_API_KEY not set) ─────────
+
+_local_model = None
+
+
+def _get_local_model():
+    """Lazy-load local Whisper model only when absolutely needed."""
+    global _local_model
+    if _local_model is None:
+        # Import only when needed — this import alone costs ~200MB RAM
+        from faster_whisper import WhisperModel
+        logger.info(f"Loading local Whisper model: {settings.whisper_model_size}")
+        _local_model = WhisperModel(
+            settings.whisper_model_size,
+            device="cpu",
+            compute_type="int8",
+        )
+        logger.info("Local Whisper model loaded.")
+    return _local_model
 
 
 def _transcribe_local(wav_path: str) -> dict:

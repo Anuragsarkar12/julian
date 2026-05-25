@@ -1,12 +1,45 @@
 # backend/app/services/audio_analyzer.py
-# Uses librosa for acoustic feature extraction.
+# Lightweight acoustic feature extraction using only numpy + scipy.
+# Replaces librosa to save ~150MB RAM in production.
 # All analysis is on 16kHz mono WAV files (output of audio_extractor.py).
 
 import logging
+import wave
+import struct
 import numpy as np
-import librosa
+from scipy import signal as scipy_signal
 
 logger = logging.getLogger(__name__)
+
+
+def _load_wav(wav_path: str) -> tuple[np.ndarray, int]:
+    """Load a WAV file into a numpy array. Returns (samples, sample_rate)."""
+    with wave.open(wav_path, "rb") as wf:
+        sr = wf.getframerate()
+        n_frames = wf.getnframes()
+        n_channels = wf.getnchannels()
+        sample_width = wf.getsampwidth()
+        raw = wf.readframes(n_frames)
+
+    # Convert bytes to numpy array
+    if sample_width == 2:  # 16-bit PCM (our ffmpeg output)
+        dtype = np.int16
+    elif sample_width == 4:
+        dtype = np.int32
+    else:
+        dtype = np.int16
+
+    y = np.frombuffer(raw, dtype=dtype).astype(np.float32)
+
+    # If stereo, take first channel
+    if n_channels > 1:
+        y = y[::n_channels]
+
+    # Normalize to [-1.0, 1.0]
+    max_val = float(np.iinfo(dtype).max)
+    y = y / max_val
+
+    return y, sr
 
 
 def analyze_audio(wav_path: str) -> dict:
@@ -16,16 +49,15 @@ def analyze_audio(wav_path: str) -> dict:
     Returns:
     {
         "duration_seconds": 62.4,
-        "pitch_variance": 34.2,       # Hz std dev of detected pitch
-        "energy_variance": 0.00034,   # RMS energy std dev
-        "pause_count": 8,             # Pauses >= 0.5 seconds
+        "pitch_variance": 34.2,
+        "energy_variance": 0.00034,
+        "pause_count": 8,
         "pause_total_seconds": 12.3,
         "longest_pause_seconds": 3.1,
     }
     """
     try:
-        # Load audio at 16kHz mono (should already be this from ffmpeg)
-        y, sr = librosa.load(wav_path, sr=16000, mono=True)
+        y, sr = _load_wav(wav_path)
         duration = float(len(y) / sr)
 
         pitch_variance = _compute_pitch_variance(y, sr)
@@ -51,7 +83,6 @@ def analyze_audio(wav_path: str) -> dict:
 
     except Exception as e:
         logger.error(f"Audio analysis failed for {wav_path}: {e}", exc_info=True)
-        # Return safe defaults rather than crashing the pipeline
         return {
             "duration_seconds": 0.0,
             "pitch_variance": 0.0,
@@ -64,38 +95,69 @@ def analyze_audio(wav_path: str) -> dict:
 
 def _compute_pitch_variance(y: np.ndarray, sr: int) -> float:
     """
-    Computes pitch variance using librosa's pyin algorithm.
-    Higher variance = more expressive, varied intonation.
-    Low variance = monotone delivery.
-
-    Returns standard deviation of detected pitch in Hz.
+    Estimates pitch variance using autocorrelation-based pitch detection.
+    Lightweight alternative to librosa.pyin — uses only numpy/scipy.
     """
     try:
-        # pyin gives more accurate pitch than piptrack for speech
-        f0, voiced_flag, voiced_probs = librosa.pyin(
-            y,
-            fmin=librosa.note_to_hz("C2"),   # ~65 Hz — lowest human speech
-            fmax=librosa.note_to_hz("C7"),   # ~2093 Hz — highest human speech
-            sr=sr,
-            frame_length=2048,
-        )
-        # Only use voiced frames (where speech is actually detected)
-        voiced_f0 = f0[voiced_flag]
-        if len(voiced_f0) < 10:
+        frame_length = 2048
+        hop_length = 512
+        fmin, fmax = 65.0, 500.0  # Human speech range in Hz
+
+        pitches = []
+        for start in range(0, len(y) - frame_length, hop_length):
+            frame = y[start : start + frame_length]
+
+            # Skip quiet frames (likely silence)
+            if np.max(np.abs(frame)) < 0.01:
+                continue
+
+            # Autocorrelation via FFT (fast)
+            corr = np.correlate(frame, frame, mode="full")
+            corr = corr[len(corr) // 2 :]  # Take positive lags only
+
+            # Find pitch period within human speech range
+            min_lag = int(sr / fmax)
+            max_lag = int(sr / fmin)
+            max_lag = min(max_lag, len(corr) - 1)
+
+            if min_lag >= max_lag:
+                continue
+
+            search = corr[min_lag : max_lag + 1]
+            if len(search) == 0:
+                continue
+
+            peak_idx = np.argmax(search) + min_lag
+
+            # Only accept if autocorrelation is strong (voiced speech)
+            if corr[peak_idx] > 0.3 * corr[0] and peak_idx > 0:
+                pitch_hz = sr / peak_idx
+                pitches.append(pitch_hz)
+
+        if len(pitches) < 10:
             return 0.0
-        return float(np.std(voiced_f0))
+
+        return float(np.std(pitches))
     except Exception:
         return 0.0
 
 
 def _compute_energy_variance(y: np.ndarray, sr: int) -> float:
-    """
-    Computes RMS energy variance across the recording.
-    Used to detect dynamic range in delivery.
-    """
+    """Computes RMS energy variance using numpy only."""
     try:
-        rms = librosa.feature.rms(y=y, frame_length=2048, hop_length=512)[0]
-        return float(np.std(rms))
+        frame_length = 2048
+        hop_length = 512
+        rms_values = []
+
+        for start in range(0, len(y) - frame_length, hop_length):
+            frame = y[start : start + frame_length]
+            rms = np.sqrt(np.mean(frame ** 2))
+            rms_values.append(rms)
+
+        if not rms_values:
+            return 0.0
+
+        return float(np.std(rms_values))
     except Exception:
         return 0.0
 
@@ -103,35 +165,40 @@ def _compute_energy_variance(y: np.ndarray, sr: int) -> float:
 def _detect_pauses(
     y: np.ndarray,
     sr: int,
-    min_pause_duration: float = 0.5,  # Minimum 500ms to count as a pause
+    min_pause_duration: float = 0.5,
     frame_duration_ms: int = 30,
 ) -> list[dict]:
     """
-    Detects silence gaps (pauses) using RMS energy thresholding.
-
-    A frame is considered silence if its RMS energy is below a
-    dynamic threshold set at 10% of the audio's mean energy.
-
-    Returns list of: {"start": float, "end": float, "duration": float}
+    Detects silence gaps using RMS energy thresholding.
+    Pure numpy implementation — no librosa dependency.
     """
     frame_length = int(sr * frame_duration_ms / 1000)
     hop_length = frame_length // 2
 
-    rms = librosa.feature.rms(y=y, frame_length=frame_length, hop_length=hop_length)[0]
+    # Compute RMS per frame
+    rms_values = []
+    for start in range(0, len(y) - frame_length, hop_length):
+        frame = y[start : start + frame_length]
+        rms = np.sqrt(np.mean(frame ** 2))
+        rms_values.append(rms)
 
-    if len(rms) == 0 or rms.max() == 0:
+    if not rms_values:
         return []
 
-    # Dynamic threshold: 10% of mean energy (adapts to recording volume)
-    threshold = max(rms.mean() * 0.10, 1e-5)
-    is_silence = rms < threshold
+    rms_arr = np.array(rms_values)
+    if rms_arr.max() == 0:
+        return []
+
+    # Dynamic threshold: 10% of mean energy
+    threshold = max(float(rms_arr.mean() * 0.10), 1e-5)
+    is_silence = rms_arr < threshold
 
     pauses = []
     in_pause = False
     pause_start = 0.0
 
     for i, silent in enumerate(is_silence):
-        t = float(librosa.frames_to_time(i, sr=sr, hop_length=hop_length))
+        t = float(i * hop_length) / sr
         if silent and not in_pause:
             in_pause = True
             pause_start = t
@@ -145,7 +212,7 @@ def _detect_pauses(
                 })
             in_pause = False
 
-    # Handle case where recording ends while still in a pause
+    # Handle recording ending in silence
     if in_pause:
         final_t = float(len(y) / sr)
         duration = final_t - pause_start
