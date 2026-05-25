@@ -30,15 +30,15 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Whisper model: {settings.whisper_model_size}")
 
-    # Pre-warm Whisper model in background
+    # Pre-warm transcription service
     try:
-        from app.services.transcriber import get_whisper_model
-        logger.info("Pre-loading Whisper model...")
-        get_whisper_model()
-        logger.info("Whisper model loaded successfully.")
+        from app.services.transcriber import preload_model
+        logger.info("Initializing transcription service...")
+        preload_model()
+        logger.info("Transcription service ready.")
     except Exception as e:
-        logger.error(f"Whisper model pre-load failed: {e}")
-        # App still starts — model will load on first request
+        logger.error(f"Transcription pre-load failed: {e}")
+        # App still starts — will initialize on first request
 
     yield
     logger.info("Julian API shutting down.")

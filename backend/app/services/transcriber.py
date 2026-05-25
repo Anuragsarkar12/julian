@@ -1,31 +1,46 @@
 # backend/app/services/transcriber.py
+# Uses Groq's free Whisper API for fast, accurate transcription.
+# Falls back to local faster-whisper if GROQ_API_KEY is not set.
+
+import os
+import json
 import logging
-from faster_whisper import WhisperModel
+import httpx
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# Module-level model cache — loaded once per process
-_model: WhisperModel | None = None
+# Check if Groq API is available
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+USE_GROQ = bool(GROQ_API_KEY)
+
+# Only load the heavy Whisper model if we need it (fallback mode)
+_local_model = None
 
 
-def get_whisper_model() -> WhisperModel:
-    """
-    Returns the Whisper model, loading it on first call.
-    Subsequent calls return the cached instance (no re-load).
-    This is called at startup to pre-warm the model.
-    """
-    global _model
-    if _model is None:
-        logger.info(f"Loading Whisper model: {settings.whisper_model_size}")
-        _model = WhisperModel(
+def _get_local_model():
+    """Lazy-load local Whisper model only if Groq is unavailable."""
+    global _local_model
+    if _local_model is None:
+        from faster_whisper import WhisperModel
+        logger.info(f"Loading local Whisper model: {settings.whisper_model_size}")
+        _local_model = WhisperModel(
             settings.whisper_model_size,
             device="cpu",
-            compute_type="int8",  # Reduces RAM by ~30%, minor accuracy trade-off
+            compute_type="int8",
         )
-        logger.info("Whisper model loaded.")
-    return _model
+        logger.info("Local Whisper model loaded.")
+    return _local_model
+
+
+def preload_model():
+    """Called at startup. With Groq, this is a no-op (no model to load)."""
+    if USE_GROQ:
+        logger.info("Using Groq Whisper API — no local model needed.")
+    else:
+        logger.info("GROQ_API_KEY not set — falling back to local Whisper.")
+        _get_local_model()
 
 
 def transcribe_audio(wav_path: str) -> dict:
@@ -41,14 +56,77 @@ def transcribe_audio(wav_path: str) -> dict:
         "words": [{"word": "hello", "start": 0.12, "end": 0.45, "probability": 0.98}, ...]
     }
     """
-    model = get_whisper_model()
+    if USE_GROQ:
+        return _transcribe_groq(wav_path)
+    else:
+        return _transcribe_local(wav_path)
+
+
+def _transcribe_groq(wav_path: str) -> dict:
+    """Transcribe using Groq's free Whisper API (~2-5 seconds for any audio)."""
+    try:
+        with open(wav_path, "rb") as f:
+            response = httpx.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                files={"file": (os.path.basename(wav_path), f, "audio/wav")},
+                data={
+                    "model": "whisper-large-v3",
+                    "response_format": "verbose_json",
+                    "timestamp_granularities[]": "word",
+                    "language": "en",
+                },
+                timeout=60.0,
+            )
+
+        if response.status_code != 200:
+            logger.error(f"Groq API error {response.status_code}: {response.text}")
+            # Fall back to local model
+            return _transcribe_local(wav_path)
+
+        data = response.json()
+        full_text = data.get("text", "").strip()
+        duration = float(data.get("duration", 0))
+        word_count = len(full_text.split()) if full_text else 0
+
+        # Parse word-level timestamps
+        all_words = []
+        for word_data in data.get("words", []):
+            all_words.append({
+                "word": word_data.get("word", "").strip().lower().strip(".,!?;:"),
+                "start": round(float(word_data.get("start", 0)), 3),
+                "end": round(float(word_data.get("end", 0)), 3),
+                "probability": 0.95,  # Groq doesn't return per-word confidence
+            })
+
+        logger.info(
+            f"Groq transcription complete: {word_count} words, "
+            f"{duration:.1f}s, response in ~{response.elapsed.total_seconds():.1f}s"
+        )
+
+        return {
+            "text": full_text,
+            "word_count": word_count,
+            "duration_seconds": round(duration, 2),
+            "language": "en",
+            "words": all_words,
+        }
+
+    except Exception as e:
+        logger.error(f"Groq transcription failed: {e}. Falling back to local.")
+        return _transcribe_local(wav_path)
+
+
+def _transcribe_local(wav_path: str) -> dict:
+    """Transcribe using local faster-whisper (slow on free-tier CPUs)."""
+    model = _get_local_model()
 
     segments, info = model.transcribe(
         wav_path,
         language="en",
         beam_size=5,
-        word_timestamps=True,      # Per-word timing — needed for WPM and filler detection
-        vad_filter=True,           # Built-in silence filtering
+        word_timestamps=True,
+        vad_filter=True,
         vad_parameters={
             "min_silence_duration_ms": 500,
             "threshold": 0.5,
@@ -63,7 +141,7 @@ def transcribe_audio(wav_path: str) -> dict:
         if segment.words:
             for word in segment.words:
                 all_words.append({
-                    "word": word.word.strip().lower(),
+                    "word": word.word.strip().lower().strip(".,!?;:"),
                     "start": round(word.start, 3),
                     "end": round(word.end, 3),
                     "probability": round(word.probability, 3),
@@ -73,7 +151,7 @@ def transcribe_audio(wav_path: str) -> dict:
     word_count = len(full_text.split()) if full_text else 0
 
     logger.info(
-        f"Transcription complete: {word_count} words, "
+        f"Local transcription complete: {word_count} words, "
         f"{info.duration:.1f}s, lang={info.language}"
     )
 
