@@ -23,7 +23,8 @@ def calculate_all_scores(
     """
     Computes all four score components and total score.
 
-    Total = Delivery(40%) + Content(35%) + Improvement(15%) + Consistency(10%)
+    Total = Content(45%) + Delivery(30%) + Improvement(15%) + Consistency(10%)
+    Content is king — what you say matters more than how fast you say it.
     All scores: integers 0-100.
     """
     delivery_score = _compute_delivery_score(
@@ -38,8 +39,8 @@ def calculate_all_scores(
     consistency_score = _compute_consistency_score(current_streak)
 
     total_score = int(
-        delivery_score * 0.40
-        + content_score * 0.35
+        content_score * 0.45
+        + delivery_score * 0.30
         + improvement_score * 0.15
         + consistency_score * 0.10
     )
@@ -91,25 +92,34 @@ def _compute_content_score(
 ) -> int:
     """
     Content score combines:
-    - Deterministic baseline (50% weight): derived from word count and duration
-    - Gemini augmentation (50% weight): structure, clarity, engagement scores
+    - Deterministic baseline (30% weight): derived from word count and duration
+    - Gemini augmentation (70% weight): structure, clarity, engagement, relevance
 
-    If Gemini fails (is_fallback=True), full weight goes to deterministic baseline.
+    If Gemini fails (is_fallback=True), full weight goes to deterministic baseline
+    with a cap at 60 (you can't score high on content without AI evaluation).
     """
     # Deterministic baseline: penalize very short or very long responses
     baseline = _score_response_quality(word_count, duration_seconds)
 
     is_fallback = gemini_feedback.get("is_fallback", False)
     if is_fallback:
-        return _clamp(baseline)
+        return _clamp(min(baseline, 60))  # Cap at 60 without AI evaluation
 
-    # Gemini component: average of three 0-10 scores, normalized to 0-100
+    # Gemini component: four 0-10 scores, weighted average, normalized to 0-100
     structure  = int(gemini_feedback.get("structure_score", 5)) * 10
     clarity    = int(gemini_feedback.get("clarity_score", 5)) * 10
     engagement = int(gemini_feedback.get("engagement_score", 5)) * 10
-    gemini_component = _clamp(int((structure + clarity + engagement) / 3))
+    relevance  = int(gemini_feedback.get("relevance_score", 5)) * 10
 
-    content = int(baseline * 0.50 + gemini_component * 0.50)
+    # Relevance is weighted heaviest — off-topic answers should tank the score
+    gemini_component = _clamp(int(
+        relevance  * 0.35
+        + structure * 0.25
+        + clarity   * 0.25
+        + engagement * 0.15
+    ))
+
+    content = int(baseline * 0.30 + gemini_component * 0.70)
     return _clamp(content)
 
 

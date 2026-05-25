@@ -36,13 +36,15 @@ FALLBACK_FEEDBACK = {
     "is_fallback": True,
 }
 
-COACHING_PROMPT = """You are an expert public speaking coach reviewing a speech for a job seeker practicing behavioral interview answers.
+COACHING_PROMPT = """You are an expert behavioral interview coach at a top-tier company (Google, Meta, Amazon level).
+You are evaluating a candidate's spoken answer to a behavioral interview question.
 
-Be specific — reference exact words or phrases from the transcript. Avoid generic advice.
+Be BRUTALLY SPECIFIC — reference exact words, phrases, or sentences from the transcript.
+Do NOT give generic advice. If the answer is weak, say so clearly.
 
-CHALLENGE PROMPT: {challenge}
+INTERVIEW QUESTION: {challenge}
 
-TRANSCRIPT:
+CANDIDATE'S SPOKEN ANSWER (TRANSCRIPT):
 {transcript}
 
 DELIVERY METRICS:
@@ -52,21 +54,28 @@ DELIVERY METRICS:
 - Pauses: {pause_count} pauses ({pause_secs:.1f}s total silence)
 - Duration: {duration:.0f} seconds
 
-INSTRUCTIONS:
-Evaluate this as a behavioral interview answer. Score 0-10 on structure (STAR format adherence), 
-clarity (easy to follow), and engagement (compelling delivery).
+SCORING RUBRIC (be strict):
+- relevance_score: Does the answer ACTUALLY address the interview question? 0=completely off-topic/gibberish, 3=vaguely related, 5=addresses question but generic, 8=specific and on-point, 10=perfectly tailored to this exact question
+- structure_score: Does it follow STAR format (Situation, Task, Action, Result)? 0=no structure, 5=some structure but missing elements, 8=clear STAR with all elements, 10=textbook STAR with measurable results
+- clarity_score: Is the answer easy to follow? 0=incoherent, 5=understandable but rambling, 8=clear and concise, 10=crystal clear narrative
+- engagement_score: Would an interviewer be compelled? 0=boring/robotic, 5=adequate, 8=interesting with good details, 10=memorable and compelling
+
+IMPORTANT: If the candidate is rambling, reading something unrelated, or not answering the question, relevance_score MUST be 0-2 regardless of how well they speak.
 
 Return ONLY valid JSON, no markdown fences, no preamble:
 {{
-  "overall_summary": "2-3 sentences evaluating this as a behavioral interview answer",
-  "strengths": ["specific strength referencing actual content", "specific strength 2"],
-  "improvements": ["specific improvement with actionable advice", "specific improvement 2"],
+  "overall_summary": "2-3 sentences evaluating this as a behavioral interview answer — be honest about quality",
+  "strengths": ["specific strength referencing actual content from transcript", "specific strength 2"],
+  "improvements": ["specific improvement with actionable advice referencing transcript", "specific improvement 2"],
+  "relevance_score": <0-10>,
   "structure_score": <0-10>,
   "clarity_score": <0-10>,
   "engagement_score": <0-10>,
   "coaching_tip": "the single most impactful thing to practice before the next session",
   "next_focus": "one-line focus area for next session"
 }}"""
+
+
 
 
 async def get_gemini_coaching(
@@ -126,7 +135,7 @@ async def get_gemini_coaching(
         feedback = json.loads(raw)
 
         # Validate and clamp scores
-        for field in ("structure_score", "clarity_score", "engagement_score"):
+        for field in ("relevance_score", "structure_score", "clarity_score", "engagement_score"):
             feedback[field] = max(0, min(10, int(feedback.get(field, 5))))
 
         # Ensure required fields exist
