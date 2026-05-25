@@ -1,0 +1,43 @@
+# ── Dependencies ──────────────────────────────────────────
+node_modules/
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# ── Environment / Secrets ─────────────────────────────────
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# ── Build artifacts ───────────────────────────────────────
+frontend/.next/
+frontend/out/
+frontend/build/
+*.egg-info/
+dist/
+build/
+
+# ── IDE / OS ──────────────────────────────────────────────
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ── Whisper model cache ───────────────────────────────────
+backend/models/
+*.bin
+*.pt
+
+# ── Temporary files ───────────────────────────────────────
+/tmp/
+*.tmp
