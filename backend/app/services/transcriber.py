@@ -55,7 +55,7 @@ def _transcribe_groq(wav_path: str) -> dict:
                     "model": "whisper-large-v3",
                     "response_format": "verbose_json",
                     "timestamp_granularities[]": "word",
-                    "language": "en",
+                    # No language forced — auto-detects English, Hindi, Hinglish
                 },
                 timeout=60.0,
             )
@@ -78,16 +78,18 @@ def _transcribe_groq(wav_path: str) -> dict:
                 "probability": 0.95,
             })
 
+        detected_lang = data.get("language", "en")
         logger.info(
             f"Groq transcription complete: {word_count} words, "
-            f"{duration:.1f}s, response in ~{response.elapsed.total_seconds():.1f}s"
+            f"{duration:.1f}s, lang={detected_lang}, "
+            f"response in ~{response.elapsed.total_seconds():.1f}s"
         )
 
         return {
             "text": full_text,
             "word_count": word_count,
             "duration_seconds": round(duration, 2),
-            "language": "en",
+            "language": detected_lang,
             "words": all_words,
         }
 
@@ -123,7 +125,7 @@ def _transcribe_local(wav_path: str) -> dict:
 
     segments, info = model.transcribe(
         wav_path,
-        language="en",
+        # No language forced — auto-detects English, Hindi, Hinglish
         beam_size=5,
         word_timestamps=True,
         vad_filter=True,

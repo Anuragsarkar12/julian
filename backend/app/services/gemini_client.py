@@ -42,6 +42,10 @@ You are evaluating a candidate's spoken answer to a behavioral interview questio
 Be BRUTALLY SPECIFIC — reference exact words, phrases, or sentences from the transcript.
 Do NOT give generic advice. If the answer is weak, say so clearly.
 
+LANGUAGE NOTE: The transcript may be in English, Hindi, or Hinglish (a mix of Hindi and English). 
+This is common in Indian tech interviews. Evaluate the CONTENT and STRUCTURE regardless of language.
+Always respond in English even if the transcript is in Hindi/Hinglish.
+
 INTERVIEW QUESTION: {challenge}
 
 CANDIDATE'S SPOKEN ANSWER (TRANSCRIPT):

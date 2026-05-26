@@ -1,36 +1,44 @@
 # backend/app/services/filler_detector.py
-# Detects filler words in the transcript produced by Whisper.
+# Detects filler words in English AND Hindi/Hinglish transcripts.
 # Uses word-level detection with boundary checking to avoid false positives.
-# Example: "like" in "I like this" should NOT count; "like, it was" SHOULD count.
 
 import re
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Primary filler words — always count these
-PRIMARY_FILLERS = {
+# ── English primary fillers — always count these ─────────────────────────
+ENGLISH_PRIMARY_FILLERS = {
     "um", "uh", "er", "ah",
     "umm", "uhh", "hmm", "hm",
 }
 
-# Context-dependent fillers — words that are fillers when used as discourse markers
-# These are detected via pattern matching, not just presence
-CONTEXTUAL_FILLERS = {
-    "like",       # "it was like, really hard" — not "I like coding"
-    "basically",  # when used as a sentence-starting hedge
-    "literally",  # when used for emphasis rather than literalism
-    "actually",   # when overused as a hedge
-    "right",      # "right?" used as a filler tag question
-    "okay",       # "okay so, uh..." as a filler
-    "so",         # "so, um, basically..." as a staller
-    "you know",   # multi-word filler
-    "i mean",     # multi-word filler
-    "kind of",    # multi-word filler
-    "sort of",    # multi-word filler
+# ── Hindi/Hinglish primary fillers — always count these ──────────────────
+HINDI_PRIMARY_FILLERS = {
+    "matlab",       # "matlab... woh cheez"
+    "acha",         # "acha... toh"
+    "accha",        # alternate spelling
+    "haan",         # "haan... so..."
+    "han",          # alternate spelling
+    "toh",          # "toh... maine kiya"
+    "to",           # alternate spelling (when used as filler)
+    "bas",          # "bas... that's it"
+    "woh",          # "woh... kya hai na"
+    "wo",           # alternate spelling
+    "kya",          # "kya... I mean"
+    "na",           # "na... you know"
+    "arre",         # "arre... listen"
+    "are",          # alternate spelling
+    "yaar",         # "yaar... it was tough"
+    "dekho",        # "dekho... the thing is"
+    "samjho",       # "samjho... like"
+    "mtlb",         # SMS-style abbreviation of "matlab"
 }
 
-# Patterns for contextual fillers (must appear at sentence start or before pause)
+# All primary fillers combined
+PRIMARY_FILLERS = ENGLISH_PRIMARY_FILLERS | HINDI_PRIMARY_FILLERS
+
+# ── English contextual patterns ──────────────────────────────────────────
 CONTEXTUAL_PATTERNS = [
     r"\blike\s*,",           # "like," with comma
     r"\bbasically\b",        # basically — nearly always a filler in speech
@@ -45,10 +53,48 @@ CONTEXTUAL_PATTERNS = [
     r"\bsort of\b",          # sort of
 ]
 
+# ── Hindi/Hinglish contextual patterns ───────────────────────────────────
+HINGLISH_CONTEXTUAL_PATTERNS = [
+    r"\bkya hai na\b",       # "kya hai na... the thing is"
+    r"\bkya bolu\b",         # "kya bolu... what do I say"
+    r"\bmera matlab\b",      # "mera matlab... I mean"
+    r"\bsamajh\s+rahe\s+ho\b",  # "samajh rahe ho... you understand"
+    r"\bsuno\s+na\b",        # "suno na... listen"
+    r"\bwaise\s+toh\b",      # "waise toh... actually"
+    r"\baise\s+hi\b",        # "aise hi... just like that"
+    r"\bthik\s+hai\b",       # "thik hai... okay"
+    r"\bbol\s+raha\b",       # "bol raha... I'm saying"
+]
+
+ALL_CONTEXTUAL_PATTERNS = CONTEXTUAL_PATTERNS + HINGLISH_CONTEXTUAL_PATTERNS
+
+PATTERN_TO_KEY = {
+    r"\blike\s*,": "like",
+    r"\bbasically\b": "basically",
+    r"\bliterally\b": "literally",
+    r"\bactually\b": "actually",
+    r"\bright\s*\?": "right",
+    r"\bokay\s+so\b": "okay so",
+    r"\bso\s+um\b": "so",
+    r"\byou know\b": "you know",
+    r"\bi mean\b": "i mean",
+    r"\bkind of\b": "kind of",
+    r"\bsort of\b": "sort of",
+    r"\bkya hai na\b": "kya hai na",
+    r"\bkya bolu\b": "kya bolu",
+    r"\bmera matlab\b": "mera matlab",
+    r"\bsamajh\s+rahe\s+ho\b": "samajh rahe ho",
+    r"\bsuno\s+na\b": "suno na",
+    r"\bwaise\s+toh\b": "waise toh",
+    r"\baise\s+hi\b": "aise hi",
+    r"\bthik\s+hai\b": "thik hai",
+    r"\bbol\s+raha\b": "bol raha",
+}
+
 
 def detect_fillers(transcript: str, words: list[dict]) -> dict:
     """
-    Analyzes the transcript for filler words and returns counts.
+    Analyzes the transcript for filler words (English + Hindi/Hinglish).
 
     Args:
         transcript: Full text string from Whisper
@@ -57,9 +103,8 @@ def detect_fillers(transcript: str, words: list[dict]) -> dict:
     Returns:
     {
         "total_count": 12,
-        "by_word": {"um": 4, "like": 5, "you know": 3},
-        "filler_rate": 2.3,        # fillers per minute (needs duration from caller)
-        "filler_positions": [...]  # word start times for visualization
+        "by_word": {"um": 4, "matlab": 2, "you know": 3},
+        "filler_positions": [...]
     }
     """
     if not transcript or not transcript.strip():
@@ -77,11 +122,10 @@ def detect_fillers(transcript: str, words: list[dict]) -> dict:
             filler_positions.append(word_data.get("start", 0))
 
     # ── 2. Count contextual fillers via regex on full transcript ──────────
-    for pattern in CONTEXTUAL_PATTERNS:
+    for pattern in ALL_CONTEXTUAL_PATTERNS:
         matches = re.findall(pattern, text_lower)
         if matches:
-            # Get the base filler word from the pattern
-            key = _clean_pattern_to_key(pattern)
+            key = PATTERN_TO_KEY.get(pattern, pattern)
             counts[key] = counts.get(key, 0) + len(matches)
 
     total_count = sum(counts.values())
@@ -93,21 +137,3 @@ def detect_fillers(transcript: str, words: list[dict]) -> dict:
         "by_word": counts,
         "filler_positions": filler_positions,
     }
-
-
-def _clean_pattern_to_key(pattern: str) -> str:
-    """Maps a regex pattern back to a readable key for the by_word dict."""
-    mapping = {
-        r"\blike\s*,": "like",
-        r"\bbasically\b": "basically",
-        r"\bliterally\b": "literally",
-        r"\bactually\b": "actually",
-        r"\bright\s*\?": "right",
-        r"\bokay\s+so\b": "okay so",
-        r"\bso\s+um\b": "so",
-        r"\byou know\b": "you know",
-        r"\bi mean\b": "i mean",
-        r"\bkind of\b": "kind of",
-        r"\bsort of\b": "sort of",
-    }
-    return mapping.get(pattern, pattern)
