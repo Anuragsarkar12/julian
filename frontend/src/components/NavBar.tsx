@@ -9,7 +9,7 @@ import { useUser } from '@/hooks/useUser'
 const NAV_LINKS = [
   { href: '/dashboard', label: 'Home' },
   { href: '/questions', label: 'Questions' },
-  { href: '/potd', label: 'Daily Challenge', badge: '⚡' },
+  { href: '/potd', label: 'Daily Challenge' },
   { href: '/leaderboard', label: 'Leaderboard' },
 ]
 
