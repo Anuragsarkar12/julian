@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { Menu, X, ChevronDown, LogOut, User, BarChart3, Flame, Trophy } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 
-const NAV_LINKS = [
+const NAV_LINKS: { href: string; label: string; badge?: string }[] = [
   { href: '/dashboard', label: 'Home' },
   { href: '/questions', label: 'Questions' },
   { href: '/potd', label: 'Daily Challenge' },
