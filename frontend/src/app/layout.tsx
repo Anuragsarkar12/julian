@@ -2,7 +2,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { NavBar } from '@/components/NavBar'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -21,15 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} dark`}>
-      <body className="bg-slate-950 text-white antialiased font-sans">
-        <NavBarWrapper />
+      <body className="bg-black text-white antialiased font-sans">
         <div className="min-h-screen">{children}</div>
       </body>
     </html>
   )
-}
-
-function NavBarWrapper() {
-  // NavBar is a client component — it self-hides on landing page via useUser
-  return <NavBar />
 }

@@ -9,6 +9,7 @@ from app.schemas.session import (
     DailyLeaderboardEntry, DailyLeaderboardResponse,
     GlobalRankingEntry, GlobalRankingResponse,
 )
+from app.services.streak_manager import get_display_streak
 
 router = APIRouter()
 
@@ -156,11 +157,11 @@ async def get_global_leaderboard(
         try:
             streak_result = (
                 db.table("streaks")
-                .select("user_id, current_streak")
+                .select("user_id, current_streak, last_activity_date")
                 .in_("user_id", user_ids)
                 .execute()
             )
-            streaks = {s["user_id"]: s.get("current_streak", 0) for s in (streak_result.data or [])}
+            streaks = {s["user_id"]: get_display_streak(s) for s in (streak_result.data or [])}
         except Exception:
             pass
 

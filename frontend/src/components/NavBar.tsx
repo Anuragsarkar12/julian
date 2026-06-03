@@ -27,17 +27,15 @@ export function NavBar() {
   const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
   const avatarUrl = user.user_metadata?.avatar_url
   const initials = displayName.charAt(0).toUpperCase()
+  const currentStreak = user.user_metadata?.current_streak || 0
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-neutral-800 bg-neutral-900/80 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center text-white font-bold text-sm group-hover:scale-105 transition-transform">
-              J
-            </div>
-            <span className="text-white font-semibold hidden sm:block">Julian</span>
+          <Link href="/dashboard" className="flex items-center group">
+            <span className="text-white font-semibold">Julian</span>
           </Link>
 
           {/* Desktop nav links */}
@@ -48,10 +46,10 @@ export function NavBar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-1.5 ${
                     isActive
-                      ? 'bg-violet-500/15 text-violet-400'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      ? 'bg-neutral-800 text-white'
+                      : 'text-neutral-500 hover:text-white hover:bg-neutral-900/50'
                   }`}
                 >
                   {link.label}
@@ -68,47 +66,47 @@ export function NavBar() {
             {/* Streak indicator */}
             <div className="hidden sm:flex items-center gap-1 text-sm">
               <Flame className="w-4 h-4 text-orange-400" />
-              <span className="text-slate-400 font-medium" id="nav-streak">—</span>
+              <span className="text-neutral-400 font-medium font-mono" id="nav-streak">{currentStreak}</span>
             </div>
 
             {/* Avatar dropdown */}
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-800/50 transition-colors"
+                className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-neutral-900/50 transition-colors"
                 id="nav-avatar-btn"
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-7 h-7 rounded-full border border-slate-700" />
+                  <img src={avatarUrl} alt="" className="w-7 h-7 rounded-sm border border-neutral-700" />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-7 h-7 rounded-sm bg-white flex items-center justify-center text-black text-xs font-bold">
                     {initials}
                   </div>
                 )}
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {dropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-52 bg-slate-900 border border-slate-800 rounded-xl shadow-xl z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-3 py-2 border-b border-slate-800">
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-neutral-950 border border-neutral-800 rounded-md shadow-xl z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-3 py-2 border-b border-neutral-800">
                       <p className="text-sm text-white font-medium truncate">{displayName}</p>
-                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                      <p className="text-xs text-neutral-500 truncate">{user.email}</p>
                     </div>
                     <Link
                       href="/profile"
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-400 hover:text-white hover:bg-neutral-900/50 transition-colors"
                     >
                       <User className="w-4 h-4" /> My Profile
                     </Link>
                     <Link
                       href="/history"
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-400 hover:text-white hover:bg-neutral-900/50 transition-colors"
                     >
                       <BarChart3 className="w-4 h-4" /> My History
                     </Link>
-                    <div className="border-t border-slate-800 mt-1 pt-1">
+                    <div className="border-t border-neutral-800 mt-1 pt-1">
                       <button
                         onClick={signOut}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 transition-colors"
@@ -125,7 +123,7 @@ export function NavBar() {
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-1.5 text-slate-400 hover:text-white transition-colors"
+              className="md:hidden p-1.5 text-neutral-400 hover:text-white transition-colors"
               id="nav-mobile-toggle"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -136,7 +134,7 @@ export function NavBar() {
 
       {/* Mobile nav drawer */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-950/95 backdrop-blur-xl">
+        <div className="md:hidden border-t border-neutral-800 bg-neutral-900/95 backdrop-blur-xl">
           <div className="px-4 py-3 space-y-1">
             {NAV_LINKS.map(link => {
               const isActive = pathname === link.href
@@ -144,10 +142,10 @@ export function NavBar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`block px-3 py-2.5 rounded-sm text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-violet-500/15 text-violet-400'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      ? 'bg-neutral-800 text-white'
+                      : 'text-neutral-500 hover:text-white hover:bg-neutral-900/50'
                   }`}
                 >
                   {link.label} {link.badge || ''}

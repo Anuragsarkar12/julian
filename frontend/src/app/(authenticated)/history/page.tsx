@@ -25,9 +25,9 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <header className="border-b border-slate-800 px-6 py-4 flex items-center gap-4">
-        <Link href="/dashboard" className="text-slate-400 hover:text-white transition-colors">
+    <div className="min-h-screen bg-neutral-900">
+      <header className="border-b border-neutral-800 px-6 py-4 flex items-center gap-4">
+        <Link href="/dashboard" className="text-neutral-400 hover:text-white transition-colors">
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <span className="font-semibold text-white">Session History</span>
@@ -35,12 +35,12 @@ export default function HistoryPage() {
 
       <main className="max-w-2xl mx-auto px-6 py-6">
         {loading ? (
-          <div className="text-center text-slate-500 text-sm animate-pulse py-20">Loading...</div>
+          <div className="text-center text-neutral-500 text-sm animate-pulse py-20">Loading...</div>
         ) : sessions.length === 0 ? (
           <div className="text-center py-20 space-y-3">
             <Clock className="w-10 h-10 text-slate-700 mx-auto" />
-            <p className="text-slate-500">No sessions yet.</p>
-            <Link href="/challenge" className="text-violet-400 text-sm hover:underline">
+            <p className="text-neutral-500">No sessions yet.</p>
+            <Link href="/challenge" className="text-white text-sm hover:underline">
               Complete your first challenge
             </Link>
           </div>
@@ -50,17 +50,17 @@ export default function HistoryPage() {
               <Link
                 key={session.session_id}
                 href={`/results/${session.session_id}`}
-                className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl border border-slate-800 hover:border-slate-600 transition-colors"
+                className="flex items-center gap-4 p-4 bg-neutral-950 rounded-md border border-neutral-800 hover:border-slate-600 transition-colors"
               >
                 <div className={`text-2xl font-bold w-12 text-center ${scoreColor(session.total_score)}`}>
                   {session.total_score}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-200">
+                  <p className="text-sm text-neutral-300">
                     {format(new Date(session.created_at), 'MMM d, yyyy · h:mm a')}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-neutral-500">
                     {Math.round(session.wpm)} WPM · {session.filler_count} fillers
                   </p>
                 </div>

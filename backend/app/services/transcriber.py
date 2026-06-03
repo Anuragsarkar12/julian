@@ -11,7 +11,7 @@ from app.core.config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
+GROQ_API_KEY = settings.groq_api_key.strip() if settings.groq_api_key else ""
 USE_GROQ = bool(GROQ_API_KEY)
 
 

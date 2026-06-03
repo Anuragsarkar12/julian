@@ -33,7 +33,7 @@ export function CountdownTimer() {
   const colorClass =
     urgency === 'urgent' ? 'text-red-400' :
     urgency === 'warning' ? 'text-amber-400' :
-    'text-slate-400'
+    'text-neutral-500'
 
   return (
     <span className={`font-mono text-sm tabular-nums ${colorClass}`}>

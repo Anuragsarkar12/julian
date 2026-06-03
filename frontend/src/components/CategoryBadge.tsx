@@ -22,9 +22,9 @@ const DIFFICULTY_COLORS: Record<QuestionDifficulty, { bg: string; text: string }
 }
 
 export function CategoryBadge({ category }: { category: QuestionCategory }) {
-  const color = CATEGORY_COLORS[category] || { bg: 'bg-slate-800', text: 'text-slate-400' }
+  const color = CATEGORY_COLORS[category] || { bg: 'bg-neutral-900', text: 'text-neutral-400' }
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${color.bg} ${color.text}`}>
+    <span className={`text-[10px] px-2 py-0.5 rounded-sm border border-current font-mono uppercase tracking-widest ${color.bg} ${color.text}`}>
       {category}
     </span>
   )
@@ -33,7 +33,7 @@ export function CategoryBadge({ category }: { category: QuestionCategory }) {
 export function DifficultyBadge({ difficulty }: { difficulty: QuestionDifficulty }) {
   const color = DIFFICULTY_COLORS[difficulty]
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${color.bg} ${color.text}`}>
+    <span className={`text-[10px] px-2 py-0.5 rounded-sm border border-current font-mono uppercase tracking-widest ${color.bg} ${color.text}`}>
       {difficulty}
     </span>
   )

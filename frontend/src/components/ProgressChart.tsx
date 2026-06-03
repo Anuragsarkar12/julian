@@ -12,7 +12,7 @@ interface Props { sessions: HistorySession[] }
 export function ProgressChart({ sessions }: Props) {
   if (sessions.length === 0) {
     return (
-      <div className="flex items-center justify-center h-40 text-slate-600 text-sm">
+      <div className="flex items-center justify-center h-40 text-neutral-500 text-sm">
         No sessions yet. Complete your first challenge to see progress.
       </div>
     )
@@ -26,17 +26,17 @@ export function ProgressChart({ sessions }: Props) {
   return (
     <ResponsiveContainer width="100%" height={160}>
       <LineChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-        <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} />
-        <YAxis domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+        <XAxis dataKey="date" tick={{ fill: '#71717a', fontSize: 11 }} />
+        <YAxis domain={[0, 100]} tick={{ fill: '#71717a', fontSize: 11 }} />
         <Tooltip
-          contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }}
-          labelStyle={{ color: '#94a3b8' }}
-          itemStyle={{ color: '#a78bfa' }}
+          contentStyle={{ background: '#09090b', border: '1px solid #27272a', borderRadius: 4 }}
+          labelStyle={{ color: '#a1a1aa' }}
+          itemStyle={{ color: '#ffffff' }}
         />
         <Line
-          type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={2}
-          dot={{ fill: '#8b5cf6', r: 3 }} activeDot={{ r: 5 }}
+          type="monotone" dataKey="score" stroke="#ffffff" strokeWidth={2}
+          dot={{ fill: '#ffffff', r: 3 }} activeDot={{ r: 5 }}
         />
       </LineChart>
     </ResponsiveContainer>

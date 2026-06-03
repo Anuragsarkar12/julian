@@ -10,6 +10,7 @@ from app.schemas.session import (
     FullProfileResponse, CategoryStat, BadgeInfo,
     ActivityHeatmapResponse, ActivityDay,
 )
+from app.services.streak_manager import get_display_streak
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,7 +57,7 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         full_name=user.get("full_name"),
         avatar_url=user.get("avatar_url"),
         username=user.get("username"),
-        current_streak=streak.get("current_streak", 0) if streak else 0,
+        current_streak=get_display_streak(streak),
         longest_streak=streak.get("longest_streak", 0) if streak else 0,
         total_sessions=streak.get("total_sessions", 0) if streak else 0,
         avg_score=avg_score,
@@ -171,7 +172,7 @@ async def get_full_profile(current_user: dict = Depends(get_current_user)):
         avatar_url=user.get("avatar_url"),
         username=user.get("username"),
         created_at=user.get("created_at"),
-        current_streak=streak.get("current_streak", 0),
+        current_streak=get_display_streak(streak),
         longest_streak=streak.get("longest_streak", 0),
         total_sessions=streak.get("total_sessions", 0),
         avg_score=avg_score,

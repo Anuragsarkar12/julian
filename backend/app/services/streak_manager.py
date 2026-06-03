@@ -5,6 +5,29 @@ from datetime import date, timedelta
 logger = logging.getLogger(__name__)
 
 
+def get_display_streak(streak_record: dict | None) -> int:
+    """
+    Returns the current streak value for display purposes.
+    If the user has a gap > 1 day since their last_activity_date,
+    their streak is mathematically broken, so we return 0.
+    """
+    if not streak_record:
+        return 0
+
+    current = streak_record.get("current_streak", 0)
+    last_date_str = streak_record.get("last_activity_date")
+
+    if last_date_str:
+        try:
+            last_date = date.fromisoformat(last_date_str[:10])
+            if last_date < date.today() - timedelta(days=1):
+                return 0
+        except ValueError:
+            pass
+
+    return current
+
+
 def update_streak(db, user_id: str) -> int:
     """
     Updates the user's streak after a completed session.

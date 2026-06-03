@@ -90,24 +90,24 @@ export default function ChallengePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <header className="border-b border-slate-800 px-6 py-4 flex items-center gap-4">
-        <Link href="/dashboard" className="text-slate-400 hover:text-white transition-colors">
+    <div className="min-h-screen bg-neutral-900">
+      <header className="border-b border-neutral-800 px-6 py-4 flex items-center gap-4">
+        <Link href="/dashboard" className="text-neutral-400 hover:text-white transition-colors">
           <ChevronLeft className="w-5 h-5" />
         </Link>
-        <span className="text-sm text-slate-400">Today&apos;s Challenge</span>
+        <span className="text-sm text-neutral-400">Today&apos;s Challenge</span>
       </header>
 
       <main className="max-w-2xl mx-auto px-6 py-8 space-y-6">
         {stage === 'loading' && (
-          <div className="text-center text-slate-500 animate-pulse py-20">Loading challenge...</div>
+          <div className="text-center text-neutral-500 animate-pulse py-20">Loading challenge...</div>
         )}
 
         {/* Challenge prompt (always visible once loaded) */}
         {challenge && stage !== 'loading' && (
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+          <div className="bg-neutral-950 rounded-md border border-neutral-800 p-6">
             <div className="flex gap-2 mb-4">
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
+              <span className="text-xs px-2 py-0.5 rounded-sm bg-neutral-900 text-neutral-400">
                 {challenge.category}
               </span>
             </div>
@@ -117,8 +117,8 @@ export default function ChallengePage() {
 
         {/* PREP STAGE */}
         {stage === 'prep' && (
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-center space-y-6">
-            <div className="flex items-center justify-center gap-2 text-slate-400">
+          <div className="bg-neutral-950 rounded-md border border-neutral-800 p-6 text-center space-y-6">
+            <div className="flex items-center justify-center gap-2 text-neutral-400">
               <Clock className="w-4 h-4" />
               <span className="text-sm">Preparation time</span>
             </div>
@@ -146,10 +146,10 @@ export default function ChallengePage() {
             {/* Tips */}
             {challenge?.tips && challenge.tips.length > 0 && (
               <div className="text-left space-y-2">
-                <p className="text-xs text-slate-500 uppercase tracking-widest">Tips</p>
+                <p className="text-xs text-neutral-500 uppercase tracking-widest">Tips</p>
                 {challenge.tips.map((tip, i) => (
-                  <div key={i} className="flex gap-2 text-sm text-slate-400">
-                    <span className="text-violet-500 mt-0.5">•</span>
+                  <div key={i} className="flex gap-2 text-sm text-neutral-400">
+                    <span className="text-white mt-0.5">•</span>
                     <span>{tip}</span>
                   </div>
                 ))}
@@ -158,7 +158,7 @@ export default function ChallengePage() {
 
             <button
               onClick={skipPrep}
-              className="text-sm text-slate-500 hover:text-slate-300 transition-colors underline"
+              className="text-sm text-neutral-500 hover:text-neutral-300 transition-colors underline"
             >
               Skip prep, I&apos;m ready
             </button>
@@ -167,8 +167,8 @@ export default function ChallengePage() {
 
         {/* RECORD STAGE */}
         {stage === 'record' && (
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
-            <p className="text-sm text-slate-400 text-center">
+          <div className="bg-neutral-950 rounded-md border border-neutral-800 p-6 space-y-4">
+            <p className="text-sm text-neutral-400 text-center">
               {state === 'idle' ? "Click to start — speak for 30 seconds to 5 minutes" :
                state === 'recording' ? "Recording... click Stop when you're done" :
                "Recording complete — uploading now"}
@@ -188,19 +188,19 @@ export default function ChallengePage() {
 
         {/* UPLOADING STAGE */}
         {stage === 'uploading' && (
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-8 text-center space-y-4">
-            <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-slate-300">Uploading your recording...</p>
+          <div className="bg-neutral-950 rounded-md border border-neutral-800 p-8 text-center space-y-4">
+            <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-sm animate-spin mx-auto" />
+            <p className="text-neutral-300">Uploading your recording...</p>
           </div>
         )}
 
         {/* ANALYZING STAGE */}
         {stage === 'analyzing' && (
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-8 text-center space-y-4">
-            <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="bg-neutral-950 rounded-md border border-neutral-800 p-8 text-center space-y-4">
+            <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-sm animate-spin mx-auto" />
             <div className="space-y-1">
-              <p className="text-slate-200 font-medium">Analyzing your speech...</p>
-              <p className="text-sm text-slate-500">Transcribing · Detecting fillers · Computing metrics · Generating coaching</p>
+              <p className="text-neutral-300 font-medium">Analyzing your speech...</p>
+              <p className="text-sm text-neutral-500">Transcribing · Detecting fillers · Computing metrics · Generating coaching</p>
             </div>
             {pollError && (
               <p className="text-red-400 text-sm">{pollError}</p>
@@ -210,12 +210,12 @@ export default function ChallengePage() {
 
         {/* ERROR STAGE */}
         {stage === 'error' && (
-          <div className="bg-red-950/50 rounded-2xl border border-red-900 p-8 text-center space-y-4">
+          <div className="bg-red-950/50 rounded-md border border-red-900 p-8 text-center space-y-4">
             <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
             <p className="text-red-300">{uploadError ?? 'Something went wrong. Please try again.'}</p>
             <button
               onClick={() => { setStage('record'); resetRecording(); setUploadError(null) }}
-              className="px-6 py-2 border border-red-700 text-red-300 rounded-full text-sm hover:bg-red-900/50 transition-colors"
+              className="px-6 py-2 border border-red-700 text-red-300 rounded-sm text-sm hover:bg-red-900/50 transition-colors"
             >
               Try Again
             </button>

@@ -19,7 +19,7 @@ export function ScoreRing({ score, label, size = 120, strokeWidth = 8, color = '
           {/* Background ring */}
           <circle
             cx={size / 2} cy={size / 2} r={r}
-            fill="none" stroke="#1e293b" strokeWidth={strokeWidth}
+            fill="none" stroke="#27272a" strokeWidth={strokeWidth}
           />
           {/* Progress ring */}
           <circle
@@ -33,10 +33,10 @@ export function ScoreRing({ score, label, size = 120, strokeWidth = 8, color = '
         </svg>
         {/* Score number in center */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-white">{score}</span>
+          <span className="text-2xl font-bold text-white font-mono">{score}</span>
         </div>
       </div>
-      <span className="text-xs text-slate-400 font-medium">{label}</span>
+      <span className="text-xs text-neutral-500 font-medium">{label}</span>
     </div>
   )
 }

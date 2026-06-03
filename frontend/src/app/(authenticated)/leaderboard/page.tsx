@@ -31,27 +31,27 @@ export default function LeaderboardPage() {
           <Trophy className="w-6 h-6 text-amber-400" />
           Leaderboard
         </h1>
-        <p className="text-sm text-slate-400 mt-1">See how you rank against other candidates</p>
+        <p className="text-sm text-neutral-400 mt-1">See how you rank against other candidates</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-900 rounded-xl p-1 border border-slate-800 mb-6 w-fit">
+      <div className="flex gap-1 bg-neutral-950 rounded-sm p-1 border border-neutral-800 mb-6 w-fit">
         <button
           onClick={() => setTab('daily')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium transition-all ${
             tab === 'daily'
-              ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-neutral-800 text-white'
+              : 'text-neutral-500 hover:text-white hover:bg-neutral-900'
           }`}
         >
           <Calendar className="w-4 h-4" /> Daily POTD
         </button>
         <button
           onClick={() => setTab('global')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium transition-all ${
             tab === 'global'
-              ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-neutral-800 text-white'
+              : 'text-neutral-500 hover:text-white hover:bg-neutral-900'
           }`}
         >
           <Globe className="w-4 h-4" /> Global Rankings
@@ -69,6 +69,8 @@ export default function LeaderboardPage() {
   )
 }
 
+
+
 function DailyTab({ data }: { data: DailyLeaderboard | null }) {
   if (!data || data.entries.length === 0) {
     return (
@@ -85,12 +87,12 @@ function DailyTab({ data }: { data: DailyLeaderboard | null }) {
   return (
     <div>
       {/* Header info */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 mb-4 flex items-center justify-between">
+      <div className="bg-neutral-950 rounded-md border border-neutral-800 p-4 mb-4 flex items-center justify-between">
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-widest">Today&apos;s Question</p>
+          <p className="text-xs text-neutral-500 uppercase tracking-widest">Today&apos;s Question</p>
           <p className="text-sm text-white font-medium mt-0.5">{data.question_title || 'Problem of the Day'}</p>
         </div>
-        <div className="flex items-center gap-1 text-sm text-slate-400">
+        <div className="flex items-center gap-1 text-sm text-neutral-400">
           <Users className="w-4 h-4" />
           <span>{data.total_submissions} submissions</span>
         </div>
@@ -105,14 +107,14 @@ function DailyTab({ data }: { data: DailyLeaderboard | null }) {
             return (
               <div
                 key={entry.user_id}
-                className={`bg-slate-900 rounded-2xl border border-slate-800 flex flex-col items-center justify-end p-4 ${sizes[i]} ${
-                  entry.is_current_user ? 'ring-2 ring-violet-500' : ''
+                className={`bg-neutral-950 rounded-md border border-neutral-800 flex flex-col items-center justify-end p-4 ${sizes[i]} ${
+                  entry.is_current_user ? 'ring-1 ring-white' : ''
                 } animate-slide-up`}
                 style={{ animationDelay: `${i * 100}ms` }}
               >
                 <span className="text-2xl mb-1">{medals[i]}</span>
-                <p className="text-xs text-slate-300 truncate max-w-full">{entry.full_name || 'Anonymous'}</p>
-                <p className="text-lg font-bold text-white">{entry.score}</p>
+                <p className="text-xs text-neutral-300 truncate max-w-full">{entry.full_name || 'Anonymous'}</p>
+                <p className="text-lg font-bold text-white font-mono">{entry.score}</p>
               </div>
             )
           })}
@@ -124,44 +126,40 @@ function DailyTab({ data }: { data: DailyLeaderboard | null }) {
         {data.entries.map((entry, i) => (
           <div
             key={entry.user_id}
-            className={`flex items-center gap-4 p-3 rounded-xl border transition-all animate-fade-in ${
+            className={`flex items-center gap-4 p-3 rounded-md border transition-all animate-fade-in ${
               entry.is_current_user
-                ? 'row-highlight border-violet-900/50'
-                : 'border-slate-800 bg-slate-900'
+                ? 'bg-neutral-900 border-neutral-800'
+                : 'border-neutral-800 bg-neutral-950'
             }`}
             style={{ animationDelay: `${i * 30}ms` }}
           >
             <span className={`w-8 text-center text-sm font-bold ${
               entry.rank === 1 ? 'text-amber-400' :
-              entry.rank === 2 ? 'text-slate-300' :
+              entry.rank === 2 ? 'text-neutral-300' :
               entry.rank === 3 ? 'text-orange-400' :
-              'text-slate-600'
+              'text-neutral-500'
             }`}>
               {entry.rank <= 3 ? ['🥇','🥈','🥉'][entry.rank - 1] : `#${entry.rank}`}
             </span>
 
-            {entry.avatar_url ? (
-              <img src={entry.avatar_url} alt="" className="w-8 h-8 rounded-full border border-slate-700" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400">
-                {(entry.full_name || 'A').charAt(0).toUpperCase()}
-              </div>
-            )}
+            <Avatar src={entry.avatar_url} name={entry.full_name || 'Anonymous'} />
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-slate-200 truncate">
+              <p className="text-sm text-neutral-300 truncate">
                 {entry.full_name || 'Anonymous'}
-                {entry.is_current_user && <span className="text-violet-400 ml-2 text-xs">(you)</span>}
+                {entry.is_current_user && <span className="text-white ml-2 text-xs">(you)</span>}
               </p>
             </div>
 
-            <span className="text-sm font-bold text-white">{entry.score}</span>
+            <span className="text-sm font-bold text-white font-mono">{entry.score}</span>
           </div>
         ))}
       </div>
     </div>
   )
 }
+
+
 
 function GlobalTab({ data }: { data: GlobalRankings | null }) {
   if (!data || data.entries.length === 0) {
@@ -180,17 +178,17 @@ function GlobalTab({ data }: { data: GlobalRankings | null }) {
     <div>
       {/* User rank banner */}
       {data.user_rank && (
-        <div className="bg-gradient-to-r from-violet-950/50 to-slate-900 rounded-xl border border-violet-900/50 p-4 mb-6 flex items-center justify-between">
+        <div className="bg-neutral-950 rounded-md border border-neutral-800 p-4 mb-6 flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-500 uppercase tracking-widest">Your Global Rank</p>
-            <p className="text-2xl font-bold text-white mt-0.5">#{data.user_rank}</p>
+            <p className="text-xs text-neutral-500 uppercase tracking-widest">Your Global Rank</p>
+            <p className="text-2xl font-bold text-white mt-0.5 font-mono">#{data.user_rank}</p>
           </div>
-          <p className="text-sm text-slate-400">out of {data.total_users} participants</p>
+          <p className="text-sm text-neutral-400 font-mono">out of {data.total_users} participants</p>
         </div>
       )}
 
       {/* Table header */}
-      <div className="flex items-center gap-4 px-4 py-2 text-xs text-slate-600 uppercase tracking-widest">
+      <div className="flex items-center gap-4 px-4 py-2 text-xs text-neutral-500 uppercase tracking-widest">
         <span className="w-8">Rank</span>
         <span className="flex-1">User</span>
         <span className="w-20 text-center hidden sm:block">Solved</span>
@@ -202,54 +200,70 @@ function GlobalTab({ data }: { data: GlobalRankings | null }) {
         {data.entries.map((entry, i) => (
           <div
             key={entry.user_id}
-            className={`flex items-center gap-4 p-3 rounded-xl border transition-all animate-fade-in ${
+            className={`flex items-center gap-4 p-3 rounded-md border transition-all animate-fade-in ${
               entry.is_current_user
-                ? 'row-highlight border-violet-900/50'
-                : 'border-slate-800 bg-slate-900'
+                ? 'bg-neutral-900 border-neutral-800'
+                : 'border-neutral-800 bg-neutral-950'
             }`}
             style={{ animationDelay: `${i * 30}ms` }}
           >
-            <span className={`w-8 text-center text-sm font-bold ${
-              entry.rank <= 3 ? 'text-amber-400' : 'text-slate-500'
+            <span className={`w-8 text-center text-sm font-bold font-mono ${
+              entry.rank <= 3 ? 'text-amber-400' : 'text-neutral-500'
             }`}>
               #{entry.rank}
             </span>
 
-            {entry.avatar_url ? (
-              <img src={entry.avatar_url} alt="" className="w-8 h-8 rounded-full border border-slate-700" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400">
-                {(entry.full_name || 'A').charAt(0).toUpperCase()}
-              </div>
-            )}
+            <Avatar src={entry.avatar_url} name={entry.full_name || 'Anonymous'} />
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-slate-200 truncate">
+              <p className="text-sm text-neutral-300 truncate">
                 {entry.full_name || 'Anonymous'}
-                {entry.is_current_user && <span className="text-violet-400 ml-2 text-xs">(you)</span>}
+                {entry.is_current_user && <span className="text-white ml-2 text-xs">(you)</span>}
               </p>
             </div>
 
             <div className="w-20 text-center hidden sm:block">
               <div className="flex items-center justify-center gap-1">
                 <Target className="w-3 h-3 text-emerald-500" />
-                <span className="text-sm text-white font-medium">{entry.questions_solved}</span>
+                <span className="text-sm text-white font-medium font-mono">{entry.questions_solved}</span>
               </div>
             </div>
 
             <div className="w-20 text-center hidden sm:block">
-              <span className="text-sm text-slate-300">{entry.avg_potd_score > 0 ? Math.round(entry.avg_potd_score) : '—'}</span>
+              <span className="text-sm text-neutral-300 font-mono">{entry.avg_potd_score > 0 ? Math.round(entry.avg_potd_score) : '—'}</span>
             </div>
 
             <div className="w-16 text-center hidden sm:block">
               <div className="flex items-center justify-center gap-1">
                 <Flame className="w-3 h-3 text-orange-400" />
-                <span className="text-sm text-slate-300">{entry.current_streak}d</span>
+                <span className="text-sm text-neutral-300 font-mono">{entry.current_streak}d</span>
               </div>
             </div>
           </div>
         ))}
       </div>
     </div>
+  )
+}
+
+function Avatar({ src, name }: { src?: string | null; name: string }) {
+  const [error, setError] = useState(false)
+  const initial = (name || 'A').charAt(0).toUpperCase()
+  
+  if (!src || error) {
+    return (
+      <div className="w-8 h-8 rounded-sm bg-neutral-900 flex items-center justify-center text-xs font-bold text-white font-mono shrink-0">
+        {initial}
+      </div>
+    )
+  }
+  
+  return (
+    <img 
+      src={src} 
+      alt="" 
+      className="w-8 h-8 rounded-sm border border-neutral-800 shrink-0" 
+      onError={() => setError(true)} 
+    />
   )
 }

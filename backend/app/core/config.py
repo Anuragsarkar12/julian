@@ -13,6 +13,9 @@ class Settings(BaseSettings):
 
     # Gemini
     gemini_api_key: str
+    
+    # Groq
+    groq_api_key: str
 
     # App
     environment: str = "development"
