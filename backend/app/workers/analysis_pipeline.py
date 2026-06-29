@@ -14,8 +14,18 @@ from app.services.transcriber import transcribe_audio
 from app.services.audio_analyzer import analyze_audio
 from app.services.filler_detector import detect_fillers
 from app.services.scoring_engine import calculate_all_scores
-from app.services.gemini_client import get_gemini_coaching
+from app.services.llm_client import get_llm_coaching
 from app.services.streak_manager import update_streak
+
+import re
+
+def count_syllables(word: str) -> int:
+    word = word.lower()
+    if not word: return 0
+    count = len(re.findall(r'[aeiouy]+', word))
+    if word.endswith('e') and count > 1 and not word.endswith('le'):
+        count -= 1
+    return max(1, count)
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -74,12 +84,18 @@ async def run_analysis_pipeline(
         filler_count = filler_result["total_count"]
         filler_words_found = filler_result["by_word"]
 
-        # Filler rate (fillers per minute)
+        # ── Step 6: Compute New Metrics (PTR, MLR, Artic Rate, Disfluency) ─
+        total_syllables = sum(count_syllables(w.get("word", "")) for w in words)
+        pause_count = acoustic["pause_count"]
+        pause_total_seconds = acoustic["pause_total_seconds"]
+        
+        active_speech_time = max(0.1, duration_seconds - pause_total_seconds)
+        ptr = (active_speech_time / duration_seconds * 100.0) if duration_seconds > 0 else 0.0
+        articulation_rate = total_syllables / active_speech_time
+        mlr = total_syllables / (pause_count + 1)
+        
         minutes = duration_seconds / 60.0 if duration_seconds > 0 else 1.0
-        filler_rate = round(filler_count / minutes, 4)
-
-        # ── Step 6: Compute WPM ────────────────────────────────────────────
-        wpm = round(word_count / minutes, 2) if minutes > 0 else 0.0
+        disfluency_density = round(filler_count / minutes, 4)
 
         # ── Step 7: Fetch challenge prompt (for Gemini context) ────────────
         challenge_prompt = ""
@@ -118,18 +134,12 @@ async def run_analysis_pipeline(
                 if challenge_result.data:
                     challenge_prompt = challenge_result.data.get("prompt_text", "")
 
-        # ── Step 8: Get Gemini coaching ────────────────────────────────────
-        logger.info("[Pipeline] Calling Gemini for coaching feedback")
-        metrics_for_gemini = {
-            "wpm": wpm,
-            "filler_count": filler_count,
-            "filler_rate": filler_rate,
-            "filler_words_found": filler_words_found,
-            "pause_count": acoustic["pause_count"],
-            "pause_total_seconds": acoustic["pause_total_seconds"],
-            "duration_seconds": duration_seconds,
-        }
-        gemini_feedback = await get_gemini_coaching(
+        # ── Step 8: Get LLM coaching ───────────────────────────────────────
+        logger.info("[Pipeline] Calling LLM (Groq) for coaching feedback")
+        # Ensure we pass all needed metrics for logging or context if desired,
+        # but the new llm_client only STRICTLY needs the dynamic question and transcript.
+        metrics_for_gemini = {} 
+        gemini_feedback = await get_llm_coaching(
             transcript_text, metrics_for_gemini, challenge_prompt
         )
 
@@ -164,17 +174,13 @@ async def run_analysis_pipeline(
         # ── Step 11: Calculate scores ──────────────────────────────────────
         logger.info("[Pipeline] Calculating scores")
         scores = calculate_all_scores(
-            wpm=wpm,
-            filler_count=filler_count,
-            filler_rate=filler_rate,
-            pause_count=acoustic["pause_count"],
-            pause_total_seconds=acoustic["pause_total_seconds"],
+            articulation_rate=articulation_rate,
+            mlr=mlr,
+            ptr=ptr,
             pitch_variance=acoustic["pitch_variance"],
-            word_count=word_count,
-            duration_seconds=duration_seconds,
+            energy_variance=acoustic["energy_variance"],
+            disfluency_density=disfluency_density,
             gemini_feedback=gemini_feedback,
-            previous_total_score=previous_total_score,
-            current_streak=current_streak,
         )
 
         # ── Step 12: Write metrics to database ────────────────────────────
@@ -184,9 +190,9 @@ async def run_analysis_pipeline(
             "user_id": user_id,
             "transcript_text": transcript_text,
             "word_count": word_count,
-            "wpm": wpm,
+            "wpm": round(word_count / minutes, 2) if minutes > 0 else 0.0,
             "filler_count": filler_count,
-            "filler_rate": filler_rate,
+            "filler_rate": disfluency_density,
             "filler_words_found": filler_words_found,
             "pause_count": acoustic["pause_count"],
             "pause_total_seconds": acoustic["pause_total_seconds"],
@@ -195,8 +201,6 @@ async def run_analysis_pipeline(
             "energy_variance": acoustic["energy_variance"],
             "delivery_score": scores["delivery_score"],
             "content_score": scores["content_score"],
-            "improvement_score": scores["improvement_score"],
-            "consistency_score": scores["consistency_score"],
             "total_score": scores["total_score"],
             "gemini_feedback": gemini_feedback,
         }).execute()

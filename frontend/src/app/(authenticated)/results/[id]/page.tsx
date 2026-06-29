@@ -11,8 +11,6 @@ import type { SessionResults } from '@/types'
 const SCORE_COLORS: Record<string, string> = {
   delivery:    '#8b5cf6',
   content:     '#06b6d4',
-  improvement: '#10b981',
-  consistency: '#f59e0b',
 }
 
 export default function ResultsPage() {
@@ -77,14 +75,12 @@ export default function ResultsPage() {
         {/* Score breakdown rings */}
         <div className="bg-neutral-950 rounded-md border border-neutral-800 p-6">
           <h2 className="text-sm font-semibold text-neutral-400 mb-6">Score Breakdown</h2>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <ScoreRing score={scores.delivery_score}    label="Delivery"    color={SCORE_COLORS.delivery}    size={80} strokeWidth={6} />
             <ScoreRing score={scores.content_score}     label="Content"     color={SCORE_COLORS.content}     size={80} strokeWidth={6} />
-            <ScoreRing score={scores.improvement_score} label="Improvement" color={SCORE_COLORS.improvement} size={80} strokeWidth={6} />
-            <ScoreRing score={scores.consistency_score} label="Consistency" color={SCORE_COLORS.consistency} size={80} strokeWidth={6} />
           </div>
           <p className="text-xs text-slate-600 text-center mt-4">
-            Delivery 40% · Content 35% · Improvement 15% · Consistency 10%
+            Delivery 50% · Content 50%
           </p>
         </div>
 

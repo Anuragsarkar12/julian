@@ -45,8 +45,6 @@ export interface SessionResults {
   scores: {
     delivery_score: number
     content_score: number
-    improvement_score: number
-    consistency_score: number
     total_score: number
   }
   feedback: {

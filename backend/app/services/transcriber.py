@@ -14,6 +14,8 @@ settings = get_settings()
 GROQ_API_KEY = settings.groq_api_key.strip() if settings.groq_api_key else ""
 USE_GROQ = bool(GROQ_API_KEY)
 
+WHISPER_PROMPT = "Yeah, absolutely. Matlab, answer clear hona chahiye, completely straight to the point without any fillers."
+
 
 def preload_model():
     """Called at startup. With Groq, this is a no-op (no model to load)."""
@@ -55,6 +57,7 @@ def _transcribe_groq(wav_path: str) -> dict:
                     "model": "whisper-large-v3",
                     "response_format": "verbose_json",
                     "timestamp_granularities[]": "word",
+                    "prompt": WHISPER_PROMPT,
                     # No language forced — auto-detects English, Hindi, Hinglish
                 },
                 timeout=60.0,
@@ -126,6 +129,7 @@ def _transcribe_local(wav_path: str) -> dict:
     segments, info = model.transcribe(
         wav_path,
         # No language forced — auto-detects English, Hindi, Hinglish
+        initial_prompt=WHISPER_PROMPT,
         beam_size=5,
         word_timestamps=True,
         vad_filter=True,

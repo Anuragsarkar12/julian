@@ -182,12 +182,13 @@ export default function PracticePage() {
           </div>
 
           <div className="bg-neutral-950 rounded-md border border-neutral-800 p-6">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <ScoreRing score={results.scores.delivery_score} label="Delivery" color="#8b5cf6" size={72} strokeWidth={5} />
               <ScoreRing score={results.scores.content_score} label="Content" color="#06b6d4" size={72} strokeWidth={5} />
-              <ScoreRing score={results.scores.improvement_score} label="Growth" color="#10b981" size={72} strokeWidth={5} />
-              <ScoreRing score={results.scores.consistency_score} label="Streak" color="#f59e0b" size={72} strokeWidth={5} />
             </div>
+            <p className="text-xs text-slate-600 text-center mt-4">
+              Delivery 50% · Content 50%
+            </p>
           </div>
 
           {results.feedback.overall_summary && (
